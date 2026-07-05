@@ -1,0 +1,40 @@
+{
+  "name": "lifeops-board",
+  "version": "0.1.0",
+  "description": "Render conversational schedule updates into a static LifeOps HTML board backed by iCloud JSON.",
+  "author": {
+    "name": "Jihong Lee",
+    "email": "jihong2jihong@gmail.com"
+  },
+  "homepage": "https://github.com/bluesignum/lifeops-board",
+  "repository": "https://github.com/bluesignum/lifeops-board",
+  "license": "MIT",
+  "keywords": [
+    "lifeops",
+    "schedule",
+    "calendar",
+    "icloud",
+    "html",
+    "codex",
+    "claude"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "LifeOps Board",
+    "shortDescription": "Render iCloud schedules as static HTML",
+    "longDescription": "LifeOps Board stores interpreted schedule items in schedule.json, renders a static HTML weekly board, and keeps output/latest.html readable from iPhone Files without requiring JavaScript execution.",
+    "developerName": "Jihong Lee",
+    "category": "Productivity",
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/bluesignum/lifeops-board",
+    "defaultPrompt": [
+      "Use LifeOps Board to initialize my iCloud schedule root.",
+      "Use LifeOps Board to add this schedule and refresh output/latest.html.",
+      "Use LifeOps Board to render my current schedule board."
+    ],
+    "brandColor": "#0F766E"
+  }
+}
