@@ -12,8 +12,8 @@
   .top h1 { font-size:17px; font-weight:700; }
   .top .sub { font-size:12px; color:#8a8782; margin-top:2px; }
   .nav { display:flex; gap:6px; }
-  .nav button { border:1px solid #dcd9d3; background:#fff; border-radius:8px; padding:4px 12px; font-size:13px; cursor:pointer; color:#1f1e1c; }
-  .nav button:hover { background:#f0efec; }
+  .nav button, .nav a { border:1px solid #dcd9d3; background:#fff; border-radius:8px; padding:4px 12px; font-size:13px; cursor:pointer; color:#1f1e1c; text-decoration:none; text-align:center; }
+  .nav button:hover, .nav a:hover { background:#f0efec; }
   .legend { display:flex; gap:14px; font-size:12px; color:#5f5c56; margin-bottom:10px; flex-wrap:wrap; }
   .legend .k { display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:5px; vertical-align:-2px; }
   #err { color:#a33; font-size:13px; margin:8px 0; display:none; }
@@ -71,7 +71,7 @@
     .top h1 { font-size:16px; line-height:1.2; }
     .top .sub { font-size:11px; max-width:34ch; }
     .nav { width:100%; display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; }
-    .nav button { padding:7px 4px; font-size:12px; min-width:0; }
+    .nav button, .nav a { padding:7px 4px; font-size:12px; min-width:0; }
     .legend { gap:8px 10px; font-size:11px; margin-bottom:8px; }
     .tips { margin:6px 0 10px; gap:6px; }
     .tip { padding:8px 9px; font-size:11.5px; }
@@ -95,7 +95,7 @@
     .top { margin-bottom:6px; }
     .top h1 { font-size:15px; }
     .top .sub { font-size:10.5px; }
-    .nav button { padding:4px 9px; font-size:12px; }
+    .nav button, .nav a { padding:4px 9px; font-size:12px; }
     .legend { margin-bottom:6px; font-size:10.5px; }
     .tips { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:6px 0 8px; }
     .tip { font-size:10.5px; padding:7px 8px; }
@@ -112,9 +112,9 @@
     <div class="sub">프라임 슬롯 기반 자동 재배치 · 참고자료 기반 인사이트 · 데이터: 현재 보드 스냅샷</div>
   </div>
   <div class="nav">
-    <button onclick="move(-1)">◀ 지난주</button>
-    <button onclick="move(0)">이번주</button>
-    <button onclick="move(1)">다음주 ▶</button>
+    <a href="#" onclick="move(-1); return false;">◀ 지난주</a>
+    <a href="#" onclick="move(0); return false;">이번주</a>
+    <a href="#" onclick="move(1); return false;">다음주 ▶</a>
   </div>
 </div>
 <div class="legend">
@@ -147,6 +147,7 @@
 const BACKLOG = 'collection://6afab719-1652-40de-b208-57553457cd1d';
 const DLOG = 'collection://6fb75a12-2819-4704-963d-f25382da1bdd';
 const QTOOL = 'mcp__6d69519f-567a-4ae0-9acd-cd1c2de39ba5__notion-query-data-sources';
+const VIEW_WEEK = null;
 const BAKED = {"ts":"template","backlog":[],"dlog":[]};
 
 const DAY_S = 6*60, DAY_E = 24*60;
@@ -178,6 +179,12 @@ function refreshDensity(){
 const min = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
 const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 function monday(base){ const d=new Date(base); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd); d.setHours(0,0,0,0); return d; }
+function offsetForWeek(weekKey){
+  const today = new Date(); today.setHours(0,0,0,0);
+  const currentMon = monday(today);
+  const targetMon = monday(new Date(`${weekKey}T00:00:00`));
+  return Math.round((targetMon.getTime()-currentMon.getTime())/(7*86400000));
+}
 const hm = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
 // Notion SQL datetime은 UTC("YYYY-MM-DD HH:MM:SSZ") → 로컬(KST) 변환 필수
 function bdInfo(s){
@@ -189,6 +196,7 @@ function bdInfo(s){
           label:`${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`};
 }
 function initialOffset(){
+  if(VIEW_WEEK) return offsetForWeek(VIEW_WEEK);
   const saved = localStorage.getItem('wb_offset');
   if(saved!==null) return parseInt(saved||'0');
   const now = new Date(); const today = new Date(now); today.setHours(0,0,0,0);

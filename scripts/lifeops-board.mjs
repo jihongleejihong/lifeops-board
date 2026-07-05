@@ -185,6 +185,10 @@ function outputDate(timezone) {
   return dateParts(new Date(), timezone).date;
 }
 
+function weekFileName(weekStart) {
+  return `week-${dateKey(weekStart)}.html`;
+}
+
 function emptySchedule(root) {
   return {
     version: 1,
@@ -579,9 +583,9 @@ function escapeHtml(value) {
     .replaceAll("'", "&#39;");
 }
 
-function renderStaticBoard(schedule) {
+function renderStaticBoard(schedule, weekStartOverride = null) {
   const rows = schedule.items.map(toBoardRow);
-  const weekStart = selectWeek(rows, schedule);
+  const weekStart = weekStartOverride || selectWeek(rows, schedule);
   const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
   const today = dateParts(new Date(), schedule.timezone).date;
   const weekEnd = days[6];
@@ -603,6 +607,8 @@ function renderStaticBoard(schedule) {
   );
   return {
     title: `주간 보드 · ${weekStart.getUTCMonth() + 1}/${weekStart.getUTCDate()} – ${weekEnd.getUTCMonth() + 1}/${weekEnd.getUTCDate()}`,
+    weekStart: dateKey(weekStart),
+    nav: renderWeekNav(weekStart, schedule),
     tips: renderTips(prime, tired, mustRows, flexPlan),
     grid,
     flex: renderFlexPool(flexRows, schedule, flexPlan),
@@ -611,6 +617,18 @@ function renderStaticBoard(schedule) {
     backlogCount: backlogRows.length,
     cards: renderCards(prime, tired, mustRows, flexPlan),
   };
+}
+
+function renderWeekNav(weekStart, schedule) {
+  const today = dateParts(new Date(), schedule.timezone).date;
+  const currentWeek = mondayForDateKey(today);
+  const prevWeek = addDays(weekStart, -7);
+  const nextWeek = addDays(weekStart, 7);
+  return `<div class="nav">` +
+    `<a href="${weekFileName(prevWeek)}" onclick="move(-1); return false;">◀ 지난주</a>` +
+    `<a href="${weekFileName(currentWeek)}" onclick="move(0); return false;">이번주</a>` +
+    `<a href="${weekFileName(nextWeek)}" onclick="move(1); return false;">다음주 ▶</a>` +
+    `</div>`;
 }
 
 function renderGrid(rows, schedule, days, todayKey, flexPlan) {
@@ -815,16 +833,18 @@ function rebalanceFlexibleTasks(schedule, args = {}) {
   return { plan, updated, weekStart, weekEnd: days[6] };
 }
 
-function injectStaticFallback(htmlText, schedule) {
-  const staticBoard = renderStaticBoard(schedule);
+function injectStaticFallback(htmlText, schedule, weekStart = null) {
+  const staticBoard = renderStaticBoard(schedule, weekStart);
   let text = htmlText.replace(
     /<h1 id="title">.*?<\/h1>/s,
     `<h1 id="title">${escapeHtml(staticBoard.title)} <span id="ver" style="font-size:10px;color:#c9c6c0;font-weight:400">v2.0 · 정적</span></h1>`,
   );
+  text = text.replace(/<div class="nav">.*?<\/div>/s, staticBoard.nav);
   text = text.replace(
     '<div class="gridwrap"><div id="grid" class="grid"><div class="loading" style="grid-column:1/-1">불러오는 중…</div></div></div>',
     `<div class="gridwrap"><div id="grid" class="grid">${staticBoard.grid}</div></div>`,
   );
+  text = text.replace("const VIEW_WEEK = null;", `const VIEW_WEEK = "${staticBoard.weekStart}";`);
   text = text.replace('<div id="tips" class="tips"></div>', `<div id="tips" class="tips">${staticBoard.tips}</div>`);
   text = text.replace(
     '<span id="flexn" style="color:#a7a49e;font-weight:400"></span>',
@@ -840,12 +860,29 @@ function injectStaticFallback(htmlText, schedule) {
   return text;
 }
 
-function render(root, schedule, templateArg) {
-  const p = paths(root);
-  const template = ensureTemplate(root, templateArg);
-  mkdirp(p.output);
+function staticWeekStarts(schedule) {
+  const rows = schedule.items.map(toBoardRow);
+  const today = dateParts(new Date(), schedule.timezone).date;
+  const anchors = [selectWeek(rows, schedule), mondayForDateKey(today)];
+  for (const row of rows) {
+    const info = boardDateInfo(row.bd, schedule.timezone);
+    if (info?.date) anchors.push(mondayForDateKey(info.date));
+    if (row.ddl) anchors.push(mondayForDateKey(String(row.ddl).slice(0, 10)));
+  }
+  const minTime = Math.min(...anchors.map((date) => date.getTime()));
+  const maxTime = Math.max(...anchors.map((date) => date.getTime()));
+  const start = addDays(new Date(minTime), -12 * 7);
+  const end = addDays(new Date(maxTime), 12 * 7);
+  const weeks = [];
+  for (let cursor = start; cursor.getTime() <= end.getTime(); cursor = addDays(cursor, 7)) {
+    weeks.push(cursor);
+  }
+  return weeks;
+}
+
+function prepareTemplateText(templateFile, schedule) {
   const baked = JSON.stringify(makeBaked(schedule));
-  let text = fs.readFileSync(template, "utf8");
+  let text = fs.readFileSync(templateFile, "utf8");
   text = text.replace(
     /const BAKED = .*?;\n\nconst DAY_S =/s,
     `const BAKED = ${baked};\n\nconst DAY_S =`,
@@ -858,10 +895,24 @@ function render(root, schedule, templateArg) {
   text = text.replace("if(!await waitCowork()){", "if(true || !await waitCowork()){");
   text = text.replace("const top = m =>", "const yTop = m =>");
   text = text.replaceAll("${top(", "${yTop(");
-  text = injectStaticFallback(text, schedule);
+  return text;
+}
+
+function render(root, schedule, templateArg) {
+  const p = paths(root);
+  const template = ensureTemplate(root, templateArg);
+  mkdirp(p.output);
+  const preparedText = prepareTemplateText(template, schedule);
+  const rows = schedule.items.map(toBoardRow);
+  const selectedWeek = selectWeek(rows, schedule);
+  const text = injectStaticFallback(preparedText, schedule, selectedWeek);
   const dated = path.join(p.output, `${outputDate(schedule.timezone)}.html`);
   fs.writeFileSync(p.latest, text, "utf8");
   fs.writeFileSync(dated, text, "utf8");
+  for (const weekStart of staticWeekStarts(schedule)) {
+    const weekText = injectStaticFallback(preparedText, schedule, weekStart);
+    fs.writeFileSync(path.join(p.output, weekFileName(weekStart)), weekText, "utf8");
+  }
   return { latest: p.latest, dated };
 }
 
