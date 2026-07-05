@@ -22,7 +22,7 @@ node scripts/lifeops-board.mjs init --root "$HOME/Library/Mobile Documents/com~a
 
 node scripts/lifeops-board.mjs add \
   --root "$HOME/Library/Mobile Documents/com~apple~CloudDocs/lifeops-board" \
-  --item-json '{"id":"evt_20260707_ringle","title":"링글 수업","type":"event","dimension":"일정","status":"대기","importance":"중","start":"2026-07-07T13:00:00+09:00","end":"2026-07-07T14:00:00+09:00","source_text":"링글 수업"}'
+  --item-json '{"id":"evt_20260707_meeting","title":"상담 미팅","type":"event","dimension":"일정","status":"대기","importance":"중","start":"2026-07-07T13:00:00+09:00","end":"2026-07-07T14:00:00+09:00","source_text":"상담 미팅"}'
 ```
 
 ## Runtime Layout
@@ -44,6 +44,7 @@ node scripts/lifeops-board.mjs init --root "<iCloud path>"
 node scripts/lifeops-board.mjs add --root "<iCloud path>" --item-json '<json>'
 node scripts/lifeops-board.mjs update --root "<iCloud path>" --id <id> --item-json '<json>'
 node scripts/lifeops-board.mjs remove --root "<iCloud path>" --id <id>
+node scripts/lifeops-board.mjs rebalance --root "<iCloud path>" --week YYYY-MM-DD
 node scripts/lifeops-board.mjs render --root "<iCloud path>"
 ```
 
@@ -73,6 +74,7 @@ codex plugin list
 ```
 
 After installation or update, start a new Codex thread and ask Codex to use `@lifeops-board`.
+Focused skills are also available for event registration, backlog task capture, flexible-task rebalancing, insight generation, and reference updates.
 
 ## Claude
 

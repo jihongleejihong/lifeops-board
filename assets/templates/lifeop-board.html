@@ -7,7 +7,7 @@
 <style>
   :root { color-scheme: light; }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: -apple-system, "Apple SD Gothic Neo", "Pretendard", sans-serif; background:#fafaf8; color:#1f1e1c; padding:16px; }
+  body { font-family: -apple-system, "Apple SD Gothic Neo", "Pretendard", sans-serif; background:#fafaf8; color:#1f1e1c; padding:calc(12px + env(safe-area-inset-top)) calc(12px + env(safe-area-inset-right)) calc(14px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left)); }
   .top { display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; flex-wrap:wrap; gap:8px; }
   .top h1 { font-size:17px; font-weight:700; }
   .top .sub { font-size:12px; color:#8a8782; margin-top:2px; }
@@ -19,12 +19,12 @@
   #err { color:#a33; font-size:13px; margin:8px 0; display:none; }
   .loading { color:#8a8782; font-size:13px; padding:30px; text-align:center; }
 
-  .gridwrap { overflow-x:auto; }
+  .gridwrap { overflow-x:auto; -webkit-overflow-scrolling:touch; padding-bottom:6px; }
   .grid { display:grid; grid-template-columns:44px repeat(7, minmax(110px,1fr)); gap:0 6px; min-width:860px; }
   .dhead { text-align:center; font-size:12.5px; font-weight:700; padding:4px 0 6px; }
   .dhead .dt { font-weight:400; color:#8a8782; font-size:11px; margin-left:3px; }
   .dhead.today { color:#c96f4a; }
-  .gutter { position:relative; }
+  .gutter { position:sticky; left:0; z-index:4; background:#fafaf8; }
   .gutter .hr { position:absolute; right:6px; font-size:10px; color:#a7a49e; transform:translateY(-50%); }
   .col { position:relative; background:#fff; border:1px solid #ebe9e4; border-radius:8px; }
   .col.today { border:1.5px solid #c96f4a; }
@@ -37,9 +37,13 @@
   .blk.evt { background:#f5dfae; border:1px solid #ecd08a; color:#6b5518; }
   .blk.evt.done { opacity:.55; }
   .blk.evt.ov { left:50%; }
+  .blk.flex { background:#d7e8f6; border:1px dashed #8eb8dd; color:#285d86; font-weight:650; z-index:2; }
   .blk.open { background:#cfe6d4; border:1px solid #b5d9be; color:#2a6b3f; font-weight:600; }
   .blk.open.tired { background:#e7f1e2; border-color:#d4e5cd; color:#6b8a5e; font-weight:400; }
   .nowline { position:absolute; left:0; right:0; border-top:2px solid #c96f4a; z-index:5; }
+  .tips { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:8px 0 12px; }
+  .tip { background:#fff; border:1px solid #e6e4df; border-left:3px solid #7cb98c; border-radius:8px; padding:9px 10px; font-size:12px; line-height:1.35; color:#3d3a35; }
+  @media (max-width:800px){ .tips { grid-template-columns:1fr; } }
 
   .pool { margin-top:16px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
   @media (max-width:800px){ .pool { grid-template-columns:1fr; } }
@@ -61,13 +65,51 @@
   .card .v { font-size:26px; font-weight:800; margin:2px 0; }
   .card .d { font-size:11px; color:#a7a49e; }
   .foot { margin-top:12px; font-size:11px; color:#a7a49e; line-height:1.5; }
+  @media (max-width:600px){
+    body { padding:calc(10px + env(safe-area-inset-top)) calc(8px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(8px + env(safe-area-inset-left)); }
+    .top { align-items:flex-start; margin-bottom:8px; }
+    .top h1 { font-size:16px; line-height:1.2; }
+    .top .sub { font-size:11px; max-width:34ch; }
+    .nav { width:100%; display:grid; grid-template-columns:1fr 1fr 1fr; gap:5px; }
+    .nav button { padding:7px 4px; font-size:12px; min-width:0; }
+    .legend { gap:8px 10px; font-size:11px; margin-bottom:8px; }
+    .tips { margin:6px 0 10px; gap:6px; }
+    .tip { padding:8px 9px; font-size:11.5px; }
+    .gridwrap { margin:0 -8px; padding:0 8px 8px; }
+    .grid { grid-template-columns:36px repeat(7, minmax(82px, 1fr)); gap:0 4px; min-width:640px; }
+    .dhead { font-size:11px; padding:3px 0 5px; }
+    .dhead .dt { display:block; margin-left:0; font-size:10px; }
+    .gutter .hr { right:4px; font-size:9px; }
+    .col { border-radius:7px; }
+    .blk { left:2px; right:2px; border-radius:5px; font-size:9.5px; padding:2px 4px; }
+    .blk .t { font-size:8.5px; }
+    .pool { margin-top:12px; gap:8px; }
+    .pcard { border-radius:8px; padding:10px; }
+    .cards { gap:8px; margin-top:10px; }
+    .card { border-radius:8px; padding:11px 12px; }
+    .card .v { font-size:22px; }
+    .foot { font-size:10.5px; }
+  }
+  @media (orientation:landscape) and (max-height:520px){
+    body { padding:8px calc(10px + env(safe-area-inset-right)) 8px calc(10px + env(safe-area-inset-left)); }
+    .top { margin-bottom:6px; }
+    .top h1 { font-size:15px; }
+    .top .sub { font-size:10.5px; }
+    .nav button { padding:4px 9px; font-size:12px; }
+    .legend { margin-bottom:6px; font-size:10.5px; }
+    .tips { grid-template-columns:repeat(3,minmax(0,1fr)); gap:6px; margin:6px 0 8px; }
+    .tip { font-size:10.5px; padding:7px 8px; }
+    .grid { grid-template-columns:38px repeat(7, minmax(92px,1fr)); min-width:760px; gap:0 5px; }
+    .pool { grid-template-columns:1fr 1fr; margin-top:10px; }
+    .cards { grid-template-columns:repeat(3,1fr); }
+  }
 </style>
 </head>
 <body>
 <div class="top">
   <div>
     <h1 id="title">주간 보드 <span id="ver" style="font-size:10px;color:#c9c6c0;font-weight:400">v2.0</span></h1>
-    <div class="sub">일정(시간 고정) = 그리드 · 할일(유동) = 아래 풀 · 데이터: Notion 백로그 라이브</div>
+    <div class="sub">프라임 슬롯 기반 자동 재배치 · 참고자료 기반 인사이트 · 데이터: 현재 보드 스냅샷</div>
   </div>
   <div class="nav">
     <button onclick="move(-1)">◀ 지난주</button>
@@ -77,11 +119,11 @@
 </div>
 <div class="legend">
   <span><span class="k" style="background:#cfe6d4"></span>오픈 프라임</span>
-  <span><span class="k" style="background:#e7f1e2"></span>자투리(피곤)</span>
+  <span><span class="k" style="background:#d7e8f6;border:1px dashed #8eb8dd"></span>유동 배치</span>
   <span><span class="k" style="background:#f5dfae"></span>일정·약속</span>
-  <span><span class="k" style="background:#fff;border:1px solid #dedbd4"></span>고정(근무·러닝·이동)</span>
 </div>
 <div id="err"></div>
+<div id="tips" class="tips"></div>
 <div class="gridwrap"><div id="grid" class="grid"><div class="loading" style="grid-column:1/-1">불러오는 중…</div></div></div>
 <div id="dbg" style="font-size:10px;color:#c9c6c0;margin-top:6px;font-family:monospace"></div>
 <div class="pool">
@@ -98,30 +140,45 @@
 </div>
 <div class="cards" id="cards"></div>
 <div class="foot" id="foot">
-  고정 템플릿 v1 (아티팩트에 하드코딩): 런 07:10–07:50 매일 · 이동 08:20–08:50 + 근무 09:00–18:00 (월–목) · 금 재택 09:00–18:00 ·
-  오픈 분류: 19시 이전 시작 & 2.5h+ = 프라임, 그 외 = 자투리 ·
-  일정 기본 길이 1h (종료시각 입력 시 그대로)
+  고정 템플릿은 가용 시간 계산에만 사용하고 화면에는 숨김 · 19시 이전 시작 & 2.5h+ = 프라임 ·
+  유동 할일은 프라임 슬롯에 소프트 배치, 일정 기본 길이 1h (종료시각 입력 시 그대로)
 </div>
 <script>
 const BACKLOG = 'collection://6afab719-1652-40de-b208-57553457cd1d';
 const DLOG = 'collection://6fb75a12-2819-4704-963d-f25382da1bdd';
 const QTOOL = 'mcp__6d69519f-567a-4ae0-9acd-cd1c2de39ba5__notion-query-data-sources';
-const BAKED = {"ts": "2026-07-05 21:15 KST", "backlog": [{"할일": "회사 업무 아카이빙 구조 잡기", "Dimension": "커리어", "유형": "할일", "상태": "대기", "중요도": "중", "예상소요": "구조 설계 2h", "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "한약 챙겨먹기 (저녁)", "Dimension": "식사", "유형": "루틴", "상태": "대기", "중요도": "중", "예상소요": null, "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "아침 8:50 도착 (러닝 단축으로)", "Dimension": "일정", "유형": "행동변화", "상태": "대기", "중요도": "중", "예상소요": null, "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "한약 챙겨먹기 (아침)", "Dimension": "식사", "유형": "루틴", "상태": "대기", "중요도": "중", "예상소요": null, "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "주간 회고 (일요일 저녁)", "Dimension": "멘탈", "유형": "루틴", "상태": "오늘", "중요도": "중", "예상소요": null, "bd": "2026-07-05 11:30:00Z", "be": "2026-07-05 12:30:00Z", "ddl": "2026-07-05", "dt": "soft"}, {"할일": "일기 (하루 마무리)", "Dimension": "멘탈", "유형": "루틴", "상태": "대기", "중요도": "중", "예상소요": null, "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "수면 가드 (23:30 취침)", "Dimension": "수면", "유형": "루틴", "상태": "대기", "중요도": "상", "예상소요": null, "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "추천서 추천인 선정 + 연락", "Dimension": "MBA", "유형": "할일", "상태": "대기", "중요도": "중", "예상소요": null, "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "가족모임 + 사촌동생 모임 (7월 내)", "Dimension": "일정", "유형": "할일", "상태": "대기", "중요도": "중", "예상소요": null, "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "청계천 러닝 (단축 7:10~7:50)", "Dimension": "운동", "유형": "루틴", "상태": "대기", "중요도": "중", "예상소요": null, "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "이직 포지션 서치 + 면접·커피챗 지속", "Dimension": "커리어", "유형": "할일", "상태": "대기", "중요도": "중", "예상소요": null, "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "지원 학교 확정 + fee waiver 조사", "Dimension": "MBA", "유형": "할일", "상태": "대기", "중요도": "중", "예상소요": null, "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "저녁식사·스트레스 고리 풀기", "Dimension": "식사", "유형": "행동변화", "상태": "대기", "중요도": "중", "예상소요": null, "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "리더스MBA application profile 작성→답장→미팅", "Dimension": "MBA", "유형": "할일", "상태": "오늘", "중요도": "상", "예상소요": "2~3h", "bd": "2026-07-05", "be": null, "ddl": "2026-07-05", "dt": "soft"}, {"할일": "MBA 네트워킹 (금산/도련/신혜)", "Dimension": "MBA", "유형": "할일", "상태": "대기", "중요도": "하", "예상소요": null, "bd": null, "be": null, "ddl": null, "dt": null}, {"할일": "GMAT 수학 이론 복습 마치기", "Dimension": "개인할일", "유형": "할일", "상태": "오늘", "중요도": "상", "예상소요": "분산 8~10h (월저녁·금·일)", "bd": "2026-07-05", "be": null, "ddl": "2026-07-03", "dt": "hard"}, {"할일": "에세이감자 상담 (목 점심)", "Dimension": "일정", "유형": "할일", "상태": "완료", "중요도": "중", "예상소요": null, "bd": "2026-07-02 03:00:00Z", "be": null, "ddl": "2026-07-02", "dt": "hard"}, {"할일": "회사 미팅 (늦은 종료 ~19:30)", "Dimension": "일정", "유형": "할일", "상태": "완료", "중요도": "중", "예상소요": null, "bd": "2026-07-01 08:00:00Z", "be": "2026-07-01 10:30:00Z", "ddl": null, "dt": null}, {"할일": "링글 수업", "Dimension": "일정", "유형": "할일", "상태": "완료", "중요도": "중", "예상소요": null, "bd": "2026-06-30 04:00:00Z", "be": "2026-06-30 05:00:00Z", "ddl": null, "dt": null}, {"할일": "수학학원 적중반 첫날", "Dimension": "개인할일", "유형": "할일", "상태": "완료", "중요도": "상", "예상소요": null, "bd": "2026-07-04 01:00:00Z", "be": "2026-07-04 08:00:00Z", "ddl": null, "dt": null}, {"할일": "운동 (헬스)", "Dimension": "운동", "유형": "루틴", "상태": "완료", "중요도": "중", "예상소요": null, "bd": "2026-06-30 09:40:00Z", "be": "2026-06-30 11:00:00Z", "ddl": null, "dt": null}, {"할일": "운동 21:00", "Dimension": "운동", "유형": "루틴", "상태": "완료", "중요도": "중", "예상소요": null, "bd": "2026-07-02 12:00:00Z", "be": "2026-07-02 13:00:00Z", "ddl": null, "dt": null}, {"할일": "청첩장 모임 (저녁)", "Dimension": "일정", "유형": "할일", "상태": "완료", "중요도": "중", "예상소요": null, "bd": "2026-07-02 10:00:00Z", "be": "2026-07-02 12:00:00Z", "ddl": null, "dt": null}, {"할일": "라파엘 결혼식", "Dimension": "일정", "유형": "할일", "상태": "완료", "중요도": "상", "예상소요": null, "bd": "2026-07-04 01:30:00Z", "be": "2026-07-04 03:30:00Z", "ddl": null, "dt": null}], "dlog": []};
+const BAKED = {"ts":"template","backlog":[],"dlog":[]};
 
-const DAY_S = 6*60, DAY_E = 24*60, PXH = 34;           // 06:00–24:00, 34px/시간
-const H = (DAY_E-DAY_S)/60*PXH;
+const DAY_S = 6*60, DAY_E = 24*60;
+let PXH = responsivePxHour();
+let H = (DAY_E-DAY_S)/60*PXH;
 // 고정 주간 템플릿 (v1: 하드코딩 — 추후 Notion 이관 가능)
 const TEMPLATE = {
   all: [{s:'07:10', e:'07:50', l:'런'}],
   work:[{s:'08:20', e:'08:50', l:'이동'}, {s:'09:00', e:'18:00', l:'근무'}],   // 월~목
   wfh: [{s:'09:00', e:'18:00', l:'재택(유연)', flex:true}]                      // 금
 };
-let offset = parseInt(localStorage.getItem('wb_offset')||'0');
+const PRIME_MINUTES = 150;
+const MIN_FLEX_MINUTES = 30;
+const DEFAULT_FLEX_MINUTES = 60;
+const MAX_FLEX_MINUTES = 150;
+const PLACEABLE_TYPES = new Set(['할일','행동변화','루틴']);
+let offset = 0;
 let backlog=null, dlog=null;
 
+function responsivePxHour(){
+  if(window.matchMedia('(orientation: landscape) and (max-height: 520px)').matches) return 24;
+  if(window.matchMedia('(max-width: 600px)').matches) return 28;
+  return 34;
+}
+function refreshDensity(){
+  PXH = responsivePxHour();
+  H = (DAY_E-DAY_S)/60*PXH;
+}
 const min = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
 const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 function monday(base){ const d=new Date(base); const wd=(d.getDay()+6)%7; d.setDate(d.getDate()-wd); d.setHours(0,0,0,0); return d; }
+const hm = m => `${String(Math.floor(m/60)).padStart(2,'0')}:${String(m%60).padStart(2,'0')}`;
 // Notion SQL datetime은 UTC("YYYY-MM-DD HH:MM:SSZ") → 로컬(KST) 변환 필수
 function bdInfo(s){
   if(!s) return null;
@@ -131,6 +188,45 @@ function bdInfo(s){
   return {date:fmt(dt), m:dt.getHours()*60+dt.getMinutes(),
           label:`${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`};
 }
+function initialOffset(){
+  const saved = localStorage.getItem('wb_offset');
+  if(saved!==null) return parseInt(saved||'0');
+  const now = new Date(); const today = new Date(now); today.setHours(0,0,0,0);
+  const currentMon = monday(today);
+  const currentEnd = new Date(currentMon.getTime()+6*86400000);
+  const dates = (BAKED.backlog||[]).map(r=>bdInfo(r.bd)).filter(Boolean).map(x=>x.date).sort();
+  if(dates.some(d=>d>=fmt(currentMon) && d<=fmt(currentEnd))) return 0;
+  const future = dates.find(d=>d>=fmt(today));
+  if(!future) return 0;
+  const targetMon = monday(new Date(`${future}T00:00:00`));
+  return Math.round((targetMon.getTime()-currentMon.getTime())/(7*86400000));
+}
+offset = initialOffset();
+function isActiveStatus(status){
+  const s = String(status||'대기').toLowerCase();
+  if(['완료','취소','cancelled','canceled','done','completed'].includes(s)) return false;
+  return true;
+}
+function importanceRank(v){ return ({'상':0, high:0, '중':1, medium:1, '하':2, low:2})[v] ?? 2; }
+function deadlineKey(r){ return r.ddl ? String(r.ddl).slice(0,10) : '9999-12-31'; }
+function isPlaceableFlex(r){ return PLACEABLE_TYPES.has(r['유형']) && isActiveStatus(r['상태']); }
+function parseEstimateMinutes(v){
+  if(!v) return DEFAULT_FLEX_MINUTES;
+  const text = String(v).toLowerCase();
+  if(text.includes('분산')) return 90;
+  let m = text.match(/(\d+(?:\.\d+)?)\s*[~\-]\s*(\d+(?:\.\d+)?)\s*h/);
+  if(m) return ((Number(m[1])+Number(m[2]))/2)*60;
+  m = text.match(/(\d+(?:\.\d+)?)\s*(?:h|시간)/);
+  if(m) return Number(m[1])*60;
+  m = text.match(/(\d+)\s*(?:m|분)/);
+  if(m) return Number(m[1]);
+  return DEFAULT_FLEX_MINUTES;
+}
+function flexDuration(r){
+  const rounded = Math.ceil(parseEstimateMinutes(r['예상소요'])/15)*15;
+  return Math.min(MAX_FLEX_MINUTES, Math.max(MIN_FLEX_MINUTES, rounded));
+}
+function isPrimeBlock(b){ return b.s<=19*60 && (b.e-b.s)>=PRIME_MINUTES; }
 const t0=Date.now();
 function dbg(m){ const el=document.getElementById('dbg');
   el.textContent += `[${((Date.now()-t0)/1000).toFixed(1)}s] ${m}  `; }
@@ -184,7 +280,80 @@ async function load(){
 function move(k){ offset=(k===0)?0:offset+k; localStorage.setItem('wb_offset',offset); render(); }
 const top = m => (m-DAY_S)/60*PXH;
 
+function fixedBusy(wd){
+  const busy=[];
+  TEMPLATE.all.forEach(b=> busy.push({s:min(b.s), e:min(b.e), l:b.l, cls:'fixed', visible:false}));
+  if(wd<=3) TEMPLATE.work.forEach(b=> busy.push({s:min(b.s), e:min(b.e), l:b.l, cls:'fixed', visible:false}));
+  if(wd===4) TEMPLATE.wfh.forEach(b=> busy.push({s:min(b.s), e:min(b.e), l:b.l, cls:'fixed flex-work', visible:false}));
+  return busy;
+}
+function timedBusyForDay(rows, key, wd){
+  const busy = fixedBusy(wd);
+  rows.forEach(r=>{
+    const bi=bdInfo(r.bd);
+    if(!bi || bi.date!==key || bi.m===null) return;
+    const beI=bdInfo(r.be);
+    const e = (beI && beI.date===key && beI.m!==null) ? beI.m : bi.m+60;
+    busy.push({s:bi.m, e, l:r['할일'], cls:'evt'+(r['상태']==='완료'?' done':''), tm:bi.label, evt:true, visible:true});
+  });
+  return busy.sort((a,b)=>a.s-b.s);
+}
+function openBlocks(busy){
+  const merged=[]; busy.forEach(b=>{ const last=merged[merged.length-1];
+    if(last && b.s<=last.e) last.e=Math.max(last.e,b.e); else merged.push({s:b.s,e:b.e}); });
+  const open=[]; let cur=7*60;
+  merged.forEach(b=>{ if(b.s>cur) open.push({s:cur,e:Math.min(b.s,23.5*60)}); cur=Math.max(cur,b.e); });
+  if(cur<23.5*60) open.push({s:cur,e:23.5*60});
+  return open;
+}
+function flexCandidates(rows, mon, weekEnd){
+  const start = fmt(mon);
+  return rows.map((r,index)=>({r,index,info:bdInfo(r.bd)}))
+    .filter(x=> isPlaceableFlex(x.r) && x.info && x.info.m===null && x.info.date>=start && x.info.date<=weekEnd)
+    .sort((a,b)=>{
+      const todayA = a.r['상태']==='오늘' ? 0 : 1, todayB = b.r['상태']==='오늘' ? 0 : 1;
+      if(todayA!==todayB) return todayA-todayB;
+      const hardA = a.r.dt==='hard' ? 0 : 1, hardB = b.r.dt==='hard' ? 0 : 1;
+      if(hardA!==hardB) return hardA-hardB;
+      const ddl = deadlineKey(a.r).localeCompare(deadlineKey(b.r));
+      if(ddl) return ddl;
+      const imp = importanceRank(a.r['중요도']) - importanceRank(b.r['중요도']);
+      return imp || a.index-b.index;
+    });
+}
+function buildFlexPlan(rows, days, dows, mon, weekEnd, now){
+  const candidates = flexCandidates(rows, mon, weekEnd);
+  const slots=[];
+  days.forEach((d,i)=>{
+    const key=fmt(d);
+    const busy = timedBusyForDay(rows, key, i);
+    openBlocks(busy).forEach(b=>{
+      if(!isPrimeBlock(b)) return;
+      const start = key===fmt(now) ? Math.max(b.s, now.getHours()*60+now.getMinutes()) : b.s;
+      if(key<fmt(now) || b.e-start<MIN_FLEX_MINUTES) return;
+      slots.push({date:key, dow:dows[i], s:start, e:b.e, cursor:start});
+    });
+  });
+  const byDate={}, placed=[], unplaced=[];
+  candidates.forEach(c=>{
+    const duration = flexDuration(c.r);
+    const due = c.r.ddl ? String(c.r.ddl).slice(0,10) : null;
+    const latest = due && due<weekEnd ? due : weekEnd;
+    const currentDate = c.info?.date;
+    const slot = slots.find(s=> s.date<=latest && s.e-s.cursor>=duration && (!currentDate || s.date>=currentDate || c.r.dt==='hard'))
+      || slots.find(s=> s.date<=latest && s.e-s.cursor>=MIN_FLEX_MINUTES);
+    if(!slot){ unplaced.push(c.r); return; }
+    const minutes = Math.min(duration, slot.e-slot.cursor);
+    const block = {row:c.r, date:slot.date, dow:slot.dow, s:slot.cursor, e:slot.cursor+minutes, duration:minutes, partial:minutes<duration};
+    slot.cursor = block.e;
+    (byDate[block.date] ||= []).push(block);
+    placed.push(block);
+  });
+  return {byDate, placed, unplaced, candidates:candidates.map(c=>c.r)};
+}
+
 function render(){
+  refreshDensity();
   const now = new Date(); const today=new Date(now); today.setHours(0,0,0,0);
   const mon = monday(new Date(today.getTime()+offset*7*86400000));
   const days = [...Array(7)].map((_,i)=> new Date(mon.getTime()+i*86400000));
@@ -217,42 +386,30 @@ function render(){
   gutter += '</div>';
   html += gutter;
 
+  const flexPlan = buildFlexPlan(backlog, days, dows, mon, weekEnd, now);
   let primeMin=0, tiredMin=0; const primeDays=new Set(), tiredDays=new Set();
 
   days.forEach((d,i)=>{
     const key=fmt(d), isToday=d.getTime()===today.getTime(), isPast=d<today;
-    const wd=i; // 0=월
-    // 고정 템플릿
-    const busy=[];
-    TEMPLATE.all.forEach(b=> busy.push({s:min(b.s), e:min(b.e), l:b.l, cls:'fixed'}));
-    if(wd<=3) TEMPLATE.work.forEach(b=> busy.push({s:min(b.s), e:min(b.e), l:b.l, cls:'fixed'}));
-    if(wd===4) TEMPLATE.wfh.forEach(b=> busy.push({s:min(b.s), e:min(b.e), l:b.l, cls:'fixed flex-work'}));
-    // 일정(시간 고정): datetime 배치일
-    backlog.forEach(r=>{
-      const bi=bdInfo(r.bd);
-      if(!bi || bi.date!==key || bi.m===null) return;
-      const beI=bdInfo(r.be);
-      const e = (beI && beI.date===key && beI.m!==null) ? beI.m : bi.m+60;
-      busy.push({s:bi.m, e, l:r['할일'], cls:'evt'+(r['상태']==='완료'?' done':''), tm:bi.label, evt:true});
-    });
-    busy.sort((a,b)=>a.s-b.s);
-    // 오픈 블록 = [07:00,23:30] − busy
-    const merged=[]; busy.forEach(b=>{ const last=merged[merged.length-1];
-      if(last && b.s<=last.e) last.e=Math.max(last.e,b.e); else merged.push({s:b.s,e:b.e}); });
-    const open=[]; let cur=7*60;
-    merged.forEach(b=>{ if(b.s>cur) open.push({s:cur,e:Math.min(b.s,23.5*60)}); cur=Math.max(cur,b.e); });
-    if(cur<23.5*60) open.push({s:cur,e:23.5*60});
+    const busy = timedBusyForDay(backlog, key, i);
+    const flexBlocks = flexPlan.byDate[key] || [];
+    const busyWithFlex = busy.concat(flexBlocks.map(b=>({s:b.s,e:b.e}))).sort((a,b)=>a.s-b.s);
 
     let col=`<div class="col ${isToday?'today':''} ${isPast?'past':''}" style="height:${H}px">`;
     for(let h=7;h<24;h+=2) col+=`<div class="hline" style="top:${top(h*60)}px"></div>`;
-    open.filter(o=>o.e-o.s>=60).forEach(o=>{
-      const prime = o.s<=19*60 && (o.e-o.s)>=150;
+    openBlocks(busyWithFlex).filter(o=>o.e-o.s>=60).forEach(o=>{
+      const prime = isPrimeBlock(o);
+      if(!prime){ tiredMin+=o.e-o.s; tiredDays.add(dows[i]); return; }
       if(prime){ primeMin+=o.e-o.s; primeDays.add(dows[i]); } else { tiredMin+=o.e-o.s; tiredDays.add(dows[i]); }
       col+=`<div class="blk open ${prime?'':'tired'}" style="top:${top(o.s)}px;height:${(o.e-o.s)/60*PXH-2}px">${prime?'오픈 프라임':'자투리'}<span class="t">${Math.round((o.e-o.s)/6)/10}h</span></div>`;
+    });
+    flexBlocks.forEach(b=>{
+      col+=`<div class="blk flex" style="top:${top(b.s)}px;height:${Math.max((b.e-b.s)/60*PXH-2,16)}px">${esc(b.row['할일'])}<span class="t">${hm(b.s)}-${hm(b.e)}${b.partial?' · 일부':''}</span></div>`;
     });
     // 블록 렌더 (겹침: 단순 2레인)
     let prevEnd=-1;
     busy.forEach(b=>{
+      if(b.visible===false) return;
       const ov = b.evt && b.s<prevEnd;
       col+=`<div class="blk ${b.cls} ${ov?'ov':''}" style="top:${top(b.s)}px;height:${Math.max((b.e-b.s)/60*PXH-2,14)}px">${b.l}${b.tm?`<span class="t">${b.tm}</span>`:''}</div>`;
       prevEnd=Math.max(prevEnd,b.e);
@@ -271,8 +428,11 @@ function render(){
     return bi && bi.m===null && bi.date>=fmt(mon) && bi.date<=weekEnd; });
   document.getElementById('flexpool').innerHTML = flex.length ? flex.map(r=>{
     const bi=bdInfo(r.bd);
-    return `<span class="chip ${r['상태']==='완료'?'done':''}"><span class="day">${dowOf(bi.date)}</span>
+    const planned = flexPlan.placed.find(b=>b.row===r);
+    const planDate = planned ? planned.date : bi.date;
+    return `<span class="chip ${r['상태']==='완료'?'done':''}"><span class="day">${dowOf(planDate)}</span>
       <span class="imp ${impCls[r['중요도']]||'imp-l'}"></span>${r['할일']}
+      ${planned?`<span class="ddl">${hm(planned.s)}-${hm(planned.e)}</span>`:''}
       ${r.ddl?`<span class="ddl">⏰${r.ddl.slice(5,10).replace('-','/')}${r.dt==='hard'?'!':''}</span>`:''}</span>`;
   }).join('') : '<span style="font-size:12px;color:#a7a49e">없음</span>';
   document.getElementById('flexn').textContent = `· ${flex.length}건`;
@@ -288,11 +448,34 @@ function render(){
   // 요약 카드
   const must = backlog.filter(r=> r.ddl && r.ddl.slice(0,10)<=weekEnd && r['상태']!=='완료' && r['유형']==='할일');
   const hh = m => (Math.round(m/30)/2);
+  const placedMin = flexPlan.placed.reduce((sum,b)=>sum+b.duration,0);
   document.getElementById('cards').innerHTML = `
-    <div class="card"><div class="l">프라임 가용</div><div class="v">~${hh(primeMin)}시간</div><div class="d">${[...primeDays].join('·')||'—'}</div></div>
-    <div class="card"><div class="l">자투리(피곤)</div><div class="v">~${hh(tiredMin)}시간</div><div class="d">${[...tiredDays].join('·')||'—'}</div></div>
+    <div class="card"><div class="l">남은 프라임</div><div class="v">~${hh(primeMin)}시간</div><div class="d">${[...primeDays].join('·')||'—'}</div></div>
+    <div class="card"><div class="l">유동 배치</div><div class="v">${flexPlan.placed.length}건</div><div class="d">~${hh(placedMin)}시간${flexPlan.unplaced.length?` · 미배치 ${flexPlan.unplaced.length}건`:''}</div></div>
     <div class="card"><div class="l">이번주 필수</div><div class="v">${must.length}건</div><div class="d">${must.map(r=>r['할일'].split(' ')[0]).slice(0,3).join(' · ')||'—'}</div></div>`;
+  document.getElementById('tips').innerHTML = renderTips(primeMin, tiredMin, must, flexPlan);
 }
+function esc(v){ return String(v??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'","&#39;"); }
+function renderTips(primeMin, tiredMin, must, flexPlan){
+  const tips=[];
+  const hard = must.filter(r=>r.dt==='hard').length;
+  if(flexPlan.unplaced.length){
+    tips.push(`프라임에 못 넣은 유동 할일 ${flexPlan.unplaced.length}건이 있어요. 마감/중요도 낮은 항목을 다음주로 넘기거나 30분 첫 행동으로 쪼개세요.`);
+  } else if(flexPlan.placed.length){
+    tips.push(`유동 할일 ${flexPlan.placed.length}건을 프라임 슬롯에 자동 배치했습니다. 새 약속이 생기면 같은 기준으로 다시 나눕니다.`);
+  }
+  if(hard) tips.push(`이번주 hard 마감 ${hard}건은 상태보다 우선입니다. 가장 이른 남은 프라임부터 지키는 편이 낫습니다.`);
+  if(primeMin>=150) tips.push(`아직 ${Math.round(primeMin/30)/2}시간 정도의 프라임이 남아 있습니다. 오전/긴 저녁 블록은 딥워크 한 가지에 쓰세요.`);
+  if(tiredMin>=180) tips.push('자투리 시간은 화면에서 숨겼습니다. 이 시간은 회복, 식사, 정리처럼 낮은 에너지 작업으로만 보세요.');
+  if(!tips.length) tips.push('이번주 보드는 빡빡합니다. 새 일을 넣기 전에 기존 유동 할일 하나를 덜어내는 편이 안전합니다.');
+  return tips.slice(0,3).map(t=>`<div class="tip">${esc(t)}</div>`).join('');
+}
+let resizeTimer=null;
+window.addEventListener('resize', ()=>{
+  if(!backlog || !dlog) return;
+  clearTimeout(resizeTimer);
+  resizeTimer=setTimeout(render,120);
+});
 load();
 </script>
 </body>

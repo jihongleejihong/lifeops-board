@@ -1,0 +1,4 @@
+interface:
+  display_name: "LifeOps 미배치 태스크 등록"
+  short_description: "미배치 할일을 LifeOps 백로그에 안전하게 등록"
+  default_prompt: "Use $lifeops-add-task to add this unscheduled task to my LifeOps backlog."

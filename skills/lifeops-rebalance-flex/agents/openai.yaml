@@ -1,0 +1,4 @@
+interface:
+  display_name: "LifeOps 유동할일 재배치"
+  short_description: "오픈 프라임 기준으로 유동 할일을 안전하게 다시 배치"
+  default_prompt: "Use $lifeops-rebalance-flex to rebalance my flexible tasks after schedule changes."

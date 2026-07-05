@@ -1,0 +1,4 @@
+interface:
+  display_name: "LifeOps 일정 등록"
+  short_description: "고정 일정과 약속을 LifeOps 보드에 정확히 등록"
+  default_prompt: "Use $lifeops-add-event to add this fixed schedule to my LifeOps board."

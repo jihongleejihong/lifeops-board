@@ -1,0 +1,4 @@
+interface:
+  display_name: "LifeOps 인사이트 생성"
+  short_description: "보드 업데이트와 정책 기반 실행 팁을 간결하게 생성"
+  default_prompt: "Use $lifeops-generate-insights to generate practical tips from my LifeOps board update."

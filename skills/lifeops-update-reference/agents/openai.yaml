@@ -1,0 +1,4 @@
+interface:
+  display_name: "LifeOps 참고자료 업데이트"
+  short_description: "LifeOps 정책과 글로서리 참고자료를 안전하게 업데이트"
+  default_prompt: "Use $lifeops-update-reference to update my LifeOps glossary and policy reference."

@@ -1,7 +1,7 @@
 {
   "name": "lifeops-board",
   "version": "0.1.0",
-  "description": "Render conversational schedule updates into a static LifeOps HTML board backed by iCloud JSON.",
+  "description": "Render conversational schedule updates into a static LifeOps HTML board backed by iCloud JSON, with flexible-task rebalancing and policy-based insights.",
   "author": {
     "name": "Jihong Lee",
     "email": "jihong2jihong@gmail.com"
@@ -21,8 +21,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "LifeOps Board",
-    "shortDescription": "Render iCloud schedules as static HTML",
-    "longDescription": "LifeOps Board stores interpreted schedule items in schedule.json, renders a static HTML weekly board, and keeps output/latest.html readable from iPhone Files without requiring JavaScript execution.",
+    "shortDescription": "Render and rebalance iCloud LifeOps schedules",
+    "longDescription": "LifeOps Board stores interpreted schedule items in schedule.json, renders a static HTML weekly board, rebalances flexible tasks into open prime, and keeps output/latest.html readable from iPhone Files without requiring JavaScript execution.",
     "developerName": "Jihong Lee",
     "category": "Productivity",
     "capabilities": [
@@ -33,7 +33,8 @@
     "defaultPrompt": [
       "Use LifeOps Board to initialize my iCloud schedule root.",
       "Use LifeOps Board to add this schedule and refresh output/latest.html.",
-      "Use LifeOps Board to render my current schedule board."
+      "Use LifeOps Board to rebalance my flexible tasks after this appointment.",
+      "Use LifeOps Board to update my LifeOps reference policy."
     ],
     "brandColor": "#0F766E"
   }

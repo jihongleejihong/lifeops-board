@@ -20,6 +20,11 @@ const TEMPLATE_WORK = [
   { s: "09:00", e: "18:00", l: "근무" },
 ];
 const TEMPLATE_WFH = [{ s: "09:00", e: "18:00", l: "재택(유연)", flex: true }];
+const PRIME_MINUTES = 150;
+const MIN_FLEX_MINUTES = 30;
+const DEFAULT_FLEX_MINUTES = 60;
+const MAX_FLEX_MINUTES = 150;
+const PLACEABLE_TYPES = new Set(["할일", "행동변화", "루틴"]);
 
 const STATUS_MAP = {
   confirmed: "대기",
@@ -48,6 +53,7 @@ Usage:
   node scripts/lifeops-board.mjs add --root <icloud-path> --item-json '<json>'
   node scripts/lifeops-board.mjs update --root <icloud-path> --id <id> --item-json '<json>'
   node scripts/lifeops-board.mjs remove --root <icloud-path> --id <id>
+  node scripts/lifeops-board.mjs rebalance --root <icloud-path> [--week YYYY-MM-DD] [--include-backlog true]
   node scripts/lifeops-board.mjs render --root <icloud-path>
 
 Options:
@@ -332,6 +338,7 @@ function toBoardDateTime(value) {
 function toBoardRow(item) {
   const bd = item.start ? toBoardDateTime(item.start) : item.date ? String(item.date).slice(0, 10) : null;
   return {
+    id: item.id,
     "할일": item.title,
     Dimension: item.dimension || "일정",
     "유형": TYPE_MAP[item.type] || item.type || "할일",
@@ -402,6 +409,152 @@ function boardDateInfo(value, timezone) {
   };
 }
 
+function isActiveStatus(status) {
+  const normalized = String(status || "대기").toLowerCase();
+  if (["완료", "취소", "cancelled", "canceled", "done", "completed"].includes(normalized)) return false;
+  return true;
+}
+
+function importanceRank(value) {
+  return { "상": 0, high: 0, "중": 1, medium: 1, "하": 2, low: 2 }[value] ?? 2;
+}
+
+function deadlineKey(row, fallback = "9999-12-31") {
+  return row.ddl ? String(row.ddl).slice(0, 10) : fallback;
+}
+
+function isPlaceableFlexRow(row) {
+  return PLACEABLE_TYPES.has(row["유형"]) && isActiveStatus(row["상태"]);
+}
+
+function parseEstimateMinutes(value) {
+  if (!value) return DEFAULT_FLEX_MINUTES;
+  const text = String(value).toLowerCase();
+  if (text.includes("분산")) return 90;
+  const hourRange = text.match(/(\d+(?:\.\d+)?)\s*[~\-]\s*(\d+(?:\.\d+)?)\s*h/);
+  if (hourRange) return ((Number(hourRange[1]) + Number(hourRange[2])) / 2) * 60;
+  const hour = text.match(/(\d+(?:\.\d+)?)\s*(?:h|시간)/);
+  if (hour) return Number(hour[1]) * 60;
+  const minute = text.match(/(\d+)\s*(?:m|분)/);
+  if (minute) return Number(minute[1]);
+  return DEFAULT_FLEX_MINUTES;
+}
+
+function flexDuration(row) {
+  const estimate = parseEstimateMinutes(row["예상소요"]);
+  const rounded = Math.ceil(estimate / 15) * 15;
+  return Math.min(MAX_FLEX_MINUTES, Math.max(MIN_FLEX_MINUTES, rounded));
+}
+
+function isPrimeBlock(block) {
+  return block.s <= 19 * 60 && block.e - block.s >= PRIME_MINUTES;
+}
+
+function collectTimedBusy(rows, schedule, day, weekdayIndex) {
+  const key = dateKey(day);
+  const busy = fixedBusy(weekdayIndex);
+  for (const row of rows) {
+    const start = boardDateInfo(row.bd, schedule.timezone);
+    if (!start || start.date !== key || start.minute === null) continue;
+    const end = boardDateInfo(row.be, schedule.timezone);
+    busy.push({
+      s: start.minute,
+      e: end && end.date === key && end.minute !== null ? end.minute : start.minute + 60,
+      l: row["할일"],
+      cls: `evt${row["상태"] === "완료" ? " done" : ""}`,
+      tm: start.label,
+      evt: true,
+      visible: true,
+    });
+  }
+  return busy.sort((a, b) => a.s - b.s);
+}
+
+function currentScheduleMinute(schedule) {
+  const parts = dateParts(new Date(), schedule.timezone);
+  return { date: parts.date, minute: parts.hour * 60 + parts.minute };
+}
+
+function getFlexCandidates(rows, schedule, weekStart, weekEnd, options = {}) {
+  const startKey = dateKey(weekStart);
+  const endKey = dateKey(weekEnd);
+  return rows
+    .map((row, index) => ({ row, index, info: boardDateInfo(row.bd, schedule.timezone) }))
+    .filter(({ row, info }) => {
+      if (!isPlaceableFlexRow(row)) return false;
+      if (info?.minute !== null) return false;
+      if (info?.date) return startKey <= info.date && info.date <= endKey;
+      if (!options.includeBacklog) return false;
+      return row["상태"] === "오늘" || deadlineKey(row) <= endKey || options.includeBacklog === "all";
+    })
+    .sort((a, b) => {
+      const aToday = a.row["상태"] === "오늘" ? 0 : 1;
+      const bToday = b.row["상태"] === "오늘" ? 0 : 1;
+      if (aToday !== bToday) return aToday - bToday;
+      const aHard = a.row.dt === "hard" ? 0 : 1;
+      const bHard = b.row.dt === "hard" ? 0 : 1;
+      if (aHard !== bHard) return aHard - bHard;
+      const ddl = deadlineKey(a.row).localeCompare(deadlineKey(b.row));
+      if (ddl) return ddl;
+      const imp = importanceRank(a.row["중요도"]) - importanceRank(b.row["중요도"]);
+      return imp || a.index - b.index;
+    });
+}
+
+function buildFlexPlan(rows, schedule, days, options = {}) {
+  const now = currentScheduleMinute(schedule);
+  const weekStart = days[0];
+  const weekEnd = days[6];
+  const candidates = getFlexCandidates(rows, schedule, weekStart, weekEnd, options);
+  const slots = [];
+  days.forEach((day, index) => {
+    const key = dateKey(day);
+    const busy = collectTimedBusy(rows, schedule, day, index);
+    for (const block of openBlocks(busy)) {
+      if (!isPrimeBlock(block)) continue;
+      const start = key === now.date ? Math.max(block.s, now.minute) : block.s;
+      if (key < now.date || block.e - start < MIN_FLEX_MINUTES) continue;
+      slots.push({ date: key, dow: DOWS[index], s: start, e: block.e, cursor: start });
+    }
+  });
+  const byDate = new Map();
+  const placed = [];
+  const unplaced = [];
+  for (const candidate of candidates) {
+    const duration = flexDuration(candidate.row);
+    const due = candidate.row.ddl ? String(candidate.row.ddl).slice(0, 10) : null;
+    const latest = due && due < dateKey(weekEnd) ? due : dateKey(weekEnd);
+    const currentDate = candidate.info?.date;
+    const eligible = slots.filter((slot) => {
+      if (slot.date > latest) return false;
+      if (slot.e - slot.cursor < duration) return false;
+      if (currentDate && slot.date < currentDate && candidate.row.dt !== "hard") return false;
+      return true;
+    });
+    const slot = eligible[0] || slots.find((item) => item.date <= latest && item.e - item.cursor >= MIN_FLEX_MINUTES);
+    if (!slot) {
+      unplaced.push(candidate.row);
+      continue;
+    }
+    const minutesValue = Math.min(duration, slot.e - slot.cursor);
+    const block = {
+      row: candidate.row,
+      id: candidate.row.id,
+      date: slot.date,
+      dow: slot.dow,
+      s: slot.cursor,
+      e: slot.cursor + minutesValue,
+      duration: minutesValue,
+      partial: minutesValue < duration,
+    };
+    slot.cursor = block.e;
+    if (!byDate.has(block.date)) byDate.set(block.date, []);
+    byDate.get(block.date).push(block);
+    placed.push(block);
+  }
+  return { byDate, placed, unplaced, candidates: candidates.map((candidate) => candidate.row) };
+}
+
 function selectWeek(rows, schedule) {
   const today = dateParts(new Date(), schedule.timezone).date;
   const currentMonday = mondayForDateKey(today);
@@ -432,7 +585,8 @@ function renderStaticBoard(schedule) {
   const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
   const today = dateParts(new Date(), schedule.timezone).date;
   const weekEnd = days[6];
-  const grid = renderGrid(rows, schedule, days, today);
+  const flexPlan = buildFlexPlan(rows, schedule, days);
+  const grid = renderGrid(rows, schedule, days, today, flexPlan);
   const flexRows = [];
   const backlogRows = [];
   for (const row of rows) {
@@ -443,22 +597,23 @@ function renderStaticBoard(schedule) {
       backlogRows.push(row);
     }
   }
-  const { prime, tired } = calculateOpenMinutes(rows, schedule, days);
+  const { prime, tired } = calculateOpenMinutes(rows, schedule, days, flexPlan);
   const mustRows = rows.filter(
     (row) => row.ddl && String(row.ddl).slice(0, 10) <= dateKey(weekEnd) && row["상태"] !== "완료" && row["유형"] === "할일",
   );
   return {
     title: `주간 보드 · ${weekStart.getUTCMonth() + 1}/${weekStart.getUTCDate()} – ${weekEnd.getUTCMonth() + 1}/${weekEnd.getUTCDate()}`,
+    tips: renderTips(prime, tired, mustRows, flexPlan),
     grid,
-    flex: renderFlexPool(flexRows, schedule),
+    flex: renderFlexPool(flexRows, schedule, flexPlan),
     backlog: renderBacklogPool(backlogRows),
     flexCount: flexRows.length,
     backlogCount: backlogRows.length,
-    cards: renderCards(prime, tired, mustRows),
+    cards: renderCards(prime, tired, mustRows, flexPlan),
   };
 }
 
-function renderGrid(rows, schedule, days, todayKey) {
+function renderGrid(rows, schedule, days, todayKey, flexPlan) {
   const parts = ["<div></div>"];
   const logByDate = new Map(schedule.daily_logs.map((row) => [String(row.date || row["날짜"] || "").slice(0, 10), row]));
   const eColor = { "가벼움": "#7cb98c", "보통": "#e2c04d", "폭발": "#dd7d6a" };
@@ -480,27 +635,15 @@ function renderGrid(rows, schedule, days, todayKey) {
   }
   gutter.push("</div>");
   parts.push(...gutter);
-  days.forEach((day, index) => parts.push(renderDayColumn(rows, schedule, day, index, todayKey)));
+  days.forEach((day, index) => parts.push(renderDayColumn(rows, schedule, day, index, todayKey, flexPlan)));
   return parts.join("");
 }
 
-function renderDayColumn(rows, schedule, day, weekdayIndex, todayKey) {
+function renderDayColumn(rows, schedule, day, weekdayIndex, todayKey, flexPlan) {
   const key = dateKey(day);
-  const busy = fixedBusy(weekdayIndex);
-  for (const row of rows) {
-    const start = boardDateInfo(row.bd, schedule.timezone);
-    if (!start || start.date !== key || start.minute === null) continue;
-    const end = boardDateInfo(row.be, schedule.timezone);
-    busy.push({
-      s: start.minute,
-      e: end && end.date === key && end.minute !== null ? end.minute : start.minute + 60,
-      l: row["할일"],
-      cls: `evt${row["상태"] === "완료" ? " done" : ""}`,
-      tm: start.label,
-      evt: true,
-    });
-  }
-  busy.sort((a, b) => a.s - b.s);
+  const busy = collectTimedBusy(rows, schedule, day, weekdayIndex);
+  const flexBlocks = flexPlan?.byDate.get(key) || [];
+  const busyWithFlex = [...busy, ...flexBlocks.map((block) => ({ s: block.s, e: block.e }))].sort((a, b) => a.s - b.s);
   const classes = ["col"];
   if (key === todayKey) classes.push("today");
   if (key < todayKey) classes.push("past");
@@ -508,16 +651,21 @@ function renderDayColumn(rows, schedule, day, weekdayIndex, todayKey) {
   for (let hour = 7; hour < 24; hour += 2) {
     parts.push(`<div class="hline" style="top:${yTop(hour * 60)}px"></div>`);
   }
-  for (const block of openBlocks(busy)) {
+  for (const block of openBlocks(busyWithFlex)) {
     if (block.e - block.s < 60) continue;
-    const prime = block.s <= 19 * 60 && block.e - block.s >= 150;
-    const label = prime ? "오픈 프라임" : "자투리";
+    const prime = isPrimeBlock(block);
+    if (!prime) continue;
+    const label = "오픈 프라임";
     const height = ((block.e - block.s) / 60) * PX_PER_HOUR - 2;
     const hours = Math.round((block.e - block.s) / 6) / 10;
-    parts.push(`<div class="blk open${prime ? "" : " tired"}" style="top:${yTop(block.s)}px;height:${height}px">${label}<span class="t">${hours}h</span></div>`);
+    parts.push(`<div class="blk open" style="top:${yTop(block.s)}px;height:${height}px">${label}<span class="t">${hours}h</span></div>`);
+  }
+  for (const block of flexBlocks) {
+    parts.push(renderFlexBlock(block));
   }
   let previousEnd = -1;
   for (const block of busy) {
+    if (block.visible === false) continue;
     const overlap = block.evt && block.s < previousEnd ? " ov" : "";
     const height = Math.max(((block.e - block.s) / 60) * PX_PER_HOUR - 2, 14);
     const tm = block.tm ? `<span class="t">${escapeHtml(block.tm)}</span>` : "";
@@ -528,13 +676,23 @@ function renderDayColumn(rows, schedule, day, weekdayIndex, todayKey) {
   return parts.join("");
 }
 
+function minuteLabel(minute) {
+  return `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
+}
+
+function renderFlexBlock(block) {
+  const height = Math.max(((block.e - block.s) / 60) * PX_PER_HOUR - 2, 16);
+  const suffix = block.partial ? " · 일부" : "";
+  return `<div class="blk flex" style="top:${yTop(block.s)}px;height:${height}px">${escapeHtml(block.row["할일"])}<span class="t">${minuteLabel(block.s)}-${minuteLabel(block.e)}${suffix}</span></div>`;
+}
+
 function fixedBusy(weekdayIndex) {
-  const busy = TEMPLATE_ALL.map((block) => ({ s: minutes(block.s), e: minutes(block.e), l: block.l, cls: "fixed" }));
+  const busy = TEMPLATE_ALL.map((block) => ({ s: minutes(block.s), e: minutes(block.e), l: block.l, cls: "fixed", visible: false }));
   if (weekdayIndex <= 3) {
-    busy.push(...TEMPLATE_WORK.map((block) => ({ s: minutes(block.s), e: minutes(block.e), l: block.l, cls: "fixed" })));
+    busy.push(...TEMPLATE_WORK.map((block) => ({ s: minutes(block.s), e: minutes(block.e), l: block.l, cls: "fixed", visible: false })));
   }
   if (weekdayIndex === 4) {
-    busy.push(...TEMPLATE_WFH.map((block) => ({ s: minutes(block.s), e: minutes(block.e), l: block.l, cls: "fixed flex-work" })));
+    busy.push(...TEMPLATE_WFH.map((block) => ({ s: minutes(block.s), e: minutes(block.e), l: block.l, cls: "fixed flex-work", visible: false })));
   }
   return busy;
 }
@@ -556,30 +714,26 @@ function openBlocks(busy) {
   return blocks;
 }
 
-function calculateOpenMinutes(rows, schedule, days) {
+function calculateOpenMinutes(rows, schedule, days, flexPlan) {
   const prime = Object.fromEntries(DOWS.map((day) => [day, 0]));
   const tired = Object.fromEntries(DOWS.map((day) => [day, 0]));
   days.forEach((day, index) => {
     const key = dateKey(day);
-    const busy = fixedBusy(index);
-    for (const row of rows) {
-      const start = boardDateInfo(row.bd, schedule.timezone);
-      if (!start || start.date !== key || start.minute === null) continue;
-      const end = boardDateInfo(row.be, schedule.timezone);
-      busy.push({ s: start.minute, e: end && end.date === key && end.minute !== null ? end.minute : start.minute + 60 });
-    }
+    const busy = collectTimedBusy(rows, schedule, day, index);
+    const flexBlocks = flexPlan?.byDate.get(key) || [];
+    busy.push(...flexBlocks.map((block) => ({ s: block.s, e: block.e })));
     for (const block of openBlocks(busy.sort((a, b) => a.s - b.s))) {
       if (block.e - block.s < 60) continue;
-      if (block.s <= 19 * 60 && block.e - block.s >= 150) prime[DOWS[index]] += block.e - block.s;
+      if (isPrimeBlock(block)) prime[DOWS[index]] += block.e - block.s;
       else tired[DOWS[index]] += block.e - block.s;
     }
   });
   return { prime, tired };
 }
 
-function renderFlexPool(rows, schedule) {
+function renderFlexPool(rows, schedule, flexPlan) {
   if (!rows.length) return '<span style="font-size:12px;color:#a7a49e">없음</span>';
-  return rows.map((row) => renderChip(row, schedule, true)).join("");
+  return rows.map((row) => renderChip(row, schedule, true, flexPlan)).join("");
 }
 
 function renderBacklogPool(rows) {
@@ -588,29 +742,75 @@ function renderBacklogPool(rows) {
   return [...rows].sort((a, b) => (order[a["중요도"]] ?? 2) - (order[b["중요도"]] ?? 2)).map((row) => renderChip(row, null, false)).join("");
 }
 
-function renderChip(row, schedule, includeDay) {
+function renderChip(row, schedule, includeDay, flexPlan) {
   const impCls = { "상": "imp-h", "중": "imp-m", "하": "imp-l" }[row["중요도"]] || "imp-l";
   const done = row["상태"] === "완료" ? " done" : "";
   let dayHtml = "";
+  let planHtml = "";
+  const planned = flexPlan?.placed.find((block) => block.row === row || block.id && block.id === row.id);
   if (includeDay && schedule) {
     const info = boardDateInfo(row.bd, schedule.timezone);
-    if (info?.date) {
-      const weekday = (dateKeyToUtc(info.date).getUTCDay() + 6) % 7;
+    const planDate = planned?.date || info?.date;
+    if (planDate) {
+      const weekday = (dateKeyToUtc(planDate).getUTCDay() + 6) % 7;
       dayHtml = `<span class="day">${DOWS[weekday]}</span>`;
     }
+    if (planned) planHtml = `<span class="ddl">${minuteLabel(planned.s)}-${minuteLabel(planned.e)}</span>`;
   }
   const ddl = row.ddl ? `<span class="ddl">⏰${escapeHtml(String(row.ddl).slice(5, 10).replace("-", "/"))}${row.dt === "hard" ? "!" : ""}</span>` : "";
-  return `<span class="chip${done}">${dayHtml}<span class="imp ${impCls}"></span>${escapeHtml(row["할일"])}${ddl}</span>`;
+  return `<span class="chip${done}">${dayHtml}<span class="imp ${impCls}"></span>${escapeHtml(row["할일"])}${planHtml}${ddl}</span>`;
 }
 
-function renderCards(prime, tired, mustRows) {
+function renderCards(prime, tired, mustRows, flexPlan) {
   const hour = (minutesValue) => Math.round(minutesValue / 30) / 2;
   const primeDays = Object.entries(prime).filter(([, value]) => value).map(([day]) => day);
-  const tiredDays = Object.entries(tired).filter(([, value]) => value).map(([day]) => day);
+  const placedMinutes = flexPlan.placed.reduce((sum, block) => sum + block.duration, 0);
   const mustTitles = mustRows.map((row) => String(row["할일"]).split(" ")[0]).slice(0, 3).join(" · ") || "—";
-  return `<div class="card"><div class="l">프라임 가용</div><div class="v">~${hour(Object.values(prime).reduce((a, b) => a + b, 0))}시간</div><div class="d">${primeDays.join("·") || "—"}</div></div>` +
-    `<div class="card"><div class="l">자투리(피곤)</div><div class="v">~${hour(Object.values(tired).reduce((a, b) => a + b, 0))}시간</div><div class="d">${tiredDays.join("·") || "—"}</div></div>` +
+  return `<div class="card"><div class="l">남은 프라임</div><div class="v">~${hour(Object.values(prime).reduce((a, b) => a + b, 0))}시간</div><div class="d">${primeDays.join("·") || "—"}</div></div>` +
+    `<div class="card"><div class="l">유동 배치</div><div class="v">${flexPlan.placed.length}건</div><div class="d">~${hour(placedMinutes)}시간${flexPlan.unplaced.length ? ` · 미배치 ${flexPlan.unplaced.length}건` : ""}</div></div>` +
     `<div class="card"><div class="l">이번주 필수</div><div class="v">${mustRows.length}건</div><div class="d">${escapeHtml(mustTitles)}</div></div>`;
+}
+
+function renderTips(prime, tired, mustRows, flexPlan) {
+  const tips = [];
+  const primeTotal = Object.values(prime).reduce((a, b) => a + b, 0);
+  const tiredTotal = Object.values(tired).reduce((a, b) => a + b, 0);
+  const tightHard = mustRows.filter((row) => row.dt === "hard").length;
+  if (flexPlan.unplaced.length) {
+    tips.push(`프라임에 못 넣은 유동 할일 ${flexPlan.unplaced.length}건이 있어요. 마감/중요도 낮은 항목을 다음주로 넘기거나 30분 첫 행동으로 쪼개세요.`);
+  } else if (flexPlan.placed.length) {
+    tips.push(`유동 할일 ${flexPlan.placed.length}건을 프라임 슬롯에 자동 배치했습니다. 새 약속이 생기면 같은 기준으로 다시 나눕니다.`);
+  }
+  if (tightHard) tips.push(`이번주 hard 마감 ${tightHard}건은 상태보다 우선입니다. 가장 이른 남은 프라임부터 지키는 편이 낫습니다.`);
+  if (primeTotal >= 150) tips.push(`아직 ${Math.round(primeTotal / 30) / 2}시간 정도의 프라임이 남아 있습니다. 오전/긴 저녁 블록은 딥워크 한 가지에 쓰세요.`);
+  if (tiredTotal >= 180) tips.push(`자투리 시간은 화면에서 숨겼습니다. 이 시간은 회복, 식사, 정리처럼 낮은 에너지 작업으로만 보세요.`);
+  if (!tips.length) tips.push("이번주 보드는 빡빡합니다. 새 일을 넣기 전에 기존 유동 할일 하나를 덜어내는 편이 안전합니다.");
+  return tips.slice(0, 3).map((tip) => `<div class="tip">${escapeHtml(tip)}</div>`).join("");
+}
+
+function includeBacklogMode(value) {
+  if (value === "all") return "all";
+  return ["true", "1", "yes", "y"].includes(String(value || "").toLowerCase());
+}
+
+function rebalanceFlexibleTasks(schedule, args = {}) {
+  const target = args.week ? String(args.week).slice(0, 10) : dateParts(new Date(), schedule.timezone).date;
+  const weekStart = mondayForDateKey(target);
+  const days = Array.from({ length: 7 }, (_, index) => addDays(weekStart, index));
+  const rows = schedule.items.map(toBoardRow);
+  const plan = buildFlexPlan(rows, schedule, days, { includeBacklog: includeBacklogMode(args["include-backlog"]) });
+  const plannedById = new Map(plan.placed.filter((block) => block.id).map((block) => [block.id, block]));
+  let updated = 0;
+  for (const item of schedule.items) {
+    const block = plannedById.get(item.id);
+    if (!block) continue;
+    if (item.date !== block.date) {
+      item.date = block.date;
+      item.updated_at = nowIso(schedule.timezone);
+      updated += 1;
+    }
+  }
+  return { plan, updated, weekStart, weekEnd: days[6] };
 }
 
 function injectStaticFallback(htmlText, schedule) {
@@ -623,6 +823,7 @@ function injectStaticFallback(htmlText, schedule) {
     '<div class="gridwrap"><div id="grid" class="grid"><div class="loading" style="grid-column:1/-1">불러오는 중…</div></div></div>',
     `<div class="gridwrap"><div id="grid" class="grid">${staticBoard.grid}</div></div>`,
   );
+  text = text.replace('<div id="tips" class="tips"></div>', `<div id="tips" class="tips">${staticBoard.tips}</div>`);
   text = text.replace(
     '<span id="flexn" style="color:#a7a49e;font-weight:400"></span>',
     `<span id="flexn" style="color:#a7a49e;font-weight:400">· ${staticBoard.flexCount}건</span>`,
@@ -649,8 +850,8 @@ function render(root, schedule, templateArg) {
   );
   if (!text.includes(`const BAKED = ${baked};`)) throw new Error("Could not replace const BAKED in template");
   text = text.replace(
-    "일정(시간 고정) = 그리드 · 할일(유동) = 아래 풀 · 데이터: Notion 백로그 라이브",
-    "일정(시간 고정) = 그리드 · 할일(유동) = 아래 풀 · 데이터: iCloud schedule.json 스냅샷",
+    /<div class="sub">.*?<\/div>/s,
+    '<div class="sub">프라임 슬롯 기반 자동 재배치 · 참고자료 기반 인사이트 · 데이터: iCloud schedule.json 스냅샷</div>',
   );
   text = text.replace("if(!await waitCowork()){", "if(true || !await waitCowork()){");
   text = text.replace("const top = m =>", "const yTop = m =>");
@@ -736,6 +937,18 @@ function removeCommand(args) {
   console.log(paths(root).latest);
 }
 
+function rebalanceCommand(args) {
+  const root = resolveRoot(args, "rebalance");
+  const schedule = readSchedule(root, false);
+  const result = rebalanceFlexibleTasks(schedule, args);
+  saveSchedule(root, schedule, args.template);
+  console.log(
+    `rebalanced ${result.plan.placed.length} flexible tasks (${result.updated} date updates, ${result.plan.unplaced.length} unplaced)`,
+  );
+  console.log(`${dateKey(result.weekStart)}..${dateKey(result.weekEnd)}`);
+  console.log(paths(root).latest);
+}
+
 function renderCommand(args) {
   const root = resolveRoot(args, "render");
   const schedule = readSchedule(root, false);
@@ -758,6 +971,7 @@ function main() {
   else if (command === "add") addCommand(args);
   else if (command === "update") updateCommand(args);
   else if (command === "remove") removeCommand(args);
+  else if (command === "rebalance") rebalanceCommand(args);
   else if (command === "render") renderCommand(args);
   else throw new Error(`Unknown command: ${command}`);
 }
