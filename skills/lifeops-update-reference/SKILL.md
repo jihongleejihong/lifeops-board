@@ -7,7 +7,7 @@ description: Update LifeOps glossary, operating policy, scheduling rules, long-t
 
 ## Workflow
 
-1. Read `../lifeops-board/references/lifeops-glossary-policy.md`.
+1. Read the shared reference at repository path `skills/lifeops-board/references/lifeops-glossary-policy.md` (from this skill folder, `../lifeops-board/references/lifeops-glossary-policy.md`).
 2. Read any user-provided reference files or notes.
 3. Patch the shared reference instead of scattering rules across individual skills:
 

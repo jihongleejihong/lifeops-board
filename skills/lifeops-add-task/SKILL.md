@@ -7,7 +7,7 @@ description: Register unscheduled LifeOps backlog tasks, first actions, routines
 
 ## Workflow
 
-1. Read `../lifeops-board/references/lifeops-glossary-policy.md`.
+1. Read the shared reference at repository path `skills/lifeops-board/references/lifeops-glossary-policy.md` (from this skill folder, `../lifeops-board/references/lifeops-glossary-policy.md`).
 2. Decide the item type:
    - `task` for single-action work.
    - `routine` for recurring habits.
@@ -20,7 +20,7 @@ description: Register unscheduled LifeOps backlog tasks, first actions, routines
 node scripts/lifeops-board.mjs add --root "<iCloud path>" --item-json '<json>'
 ```
 
-6. If the user asks to place it this week, follow with `$lifeops-rebalance-flex`.
+6. If the user asks to place it this week, invoke the `lifeops-rebalance-flex` skill or run the rebalance command directly.
 7. Report the item id and `output/latest.html`.
 
 ## Item Shape

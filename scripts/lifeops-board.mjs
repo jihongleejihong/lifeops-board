@@ -525,13 +525,13 @@ function buildFlexPlan(rows, schedule, days, options = {}) {
     const due = candidate.row.ddl ? String(candidate.row.ddl).slice(0, 10) : null;
     const latest = due && due < dateKey(weekEnd) ? due : dateKey(weekEnd);
     const currentDate = candidate.info?.date;
-    const eligible = slots.filter((slot) => {
+    const canUseSlot = (slot, neededMinutes) => {
       if (slot.date > latest) return false;
-      if (slot.e - slot.cursor < duration) return false;
+      if (slot.e - slot.cursor < neededMinutes) return false;
       if (currentDate && slot.date < currentDate && candidate.row.dt !== "hard") return false;
       return true;
-    });
-    const slot = eligible[0] || slots.find((item) => item.date <= latest && item.e - item.cursor >= MIN_FLEX_MINUTES);
+    };
+    const slot = slots.find((item) => canUseSlot(item, duration)) || slots.find((item) => canUseSlot(item, MIN_FLEX_MINUTES));
     if (!slot) {
       unplaced.push(candidate.row);
       continue;
@@ -762,24 +762,26 @@ function renderChip(row, schedule, includeDay, flexPlan) {
 }
 
 function renderCards(prime, tired, mustRows, flexPlan) {
+  const plan = flexPlan ?? { placed: [], unplaced: [] };
   const hour = (minutesValue) => Math.round(minutesValue / 30) / 2;
   const primeDays = Object.entries(prime).filter(([, value]) => value).map(([day]) => day);
-  const placedMinutes = flexPlan.placed.reduce((sum, block) => sum + block.duration, 0);
+  const placedMinutes = plan.placed.reduce((sum, block) => sum + block.duration, 0);
   const mustTitles = mustRows.map((row) => String(row["할일"]).split(" ")[0]).slice(0, 3).join(" · ") || "—";
   return `<div class="card"><div class="l">남은 프라임</div><div class="v">~${hour(Object.values(prime).reduce((a, b) => a + b, 0))}시간</div><div class="d">${primeDays.join("·") || "—"}</div></div>` +
-    `<div class="card"><div class="l">유동 배치</div><div class="v">${flexPlan.placed.length}건</div><div class="d">~${hour(placedMinutes)}시간${flexPlan.unplaced.length ? ` · 미배치 ${flexPlan.unplaced.length}건` : ""}</div></div>` +
+    `<div class="card"><div class="l">유동 배치</div><div class="v">${plan.placed.length}건</div><div class="d">~${hour(placedMinutes)}시간${plan.unplaced.length ? ` · 미배치 ${plan.unplaced.length}건` : ""}</div></div>` +
     `<div class="card"><div class="l">이번주 필수</div><div class="v">${mustRows.length}건</div><div class="d">${escapeHtml(mustTitles)}</div></div>`;
 }
 
 function renderTips(prime, tired, mustRows, flexPlan) {
+  const plan = flexPlan ?? { placed: [], unplaced: [] };
   const tips = [];
   const primeTotal = Object.values(prime).reduce((a, b) => a + b, 0);
   const tiredTotal = Object.values(tired).reduce((a, b) => a + b, 0);
   const tightHard = mustRows.filter((row) => row.dt === "hard").length;
-  if (flexPlan.unplaced.length) {
-    tips.push(`프라임에 못 넣은 유동 할일 ${flexPlan.unplaced.length}건이 있어요. 마감/중요도 낮은 항목을 다음주로 넘기거나 30분 첫 행동으로 쪼개세요.`);
-  } else if (flexPlan.placed.length) {
-    tips.push(`유동 할일 ${flexPlan.placed.length}건을 프라임 슬롯에 자동 배치했습니다. 새 약속이 생기면 같은 기준으로 다시 나눕니다.`);
+  if (plan.unplaced.length) {
+    tips.push(`프라임에 못 넣은 유동 할일 ${plan.unplaced.length}건이 있어요. 마감/중요도 낮은 항목을 다음주로 넘기거나 30분 첫 행동으로 쪼개세요.`);
+  } else if (plan.placed.length) {
+    tips.push(`유동 할일 ${plan.placed.length}건을 프라임 슬롯에 자동 배치했습니다. 새 약속이 생기면 같은 기준으로 다시 나눕니다.`);
   }
   if (tightHard) tips.push(`이번주 hard 마감 ${tightHard}건은 상태보다 우선입니다. 가장 이른 남은 프라임부터 지키는 편이 낫습니다.`);
   if (primeTotal >= 150) tips.push(`아직 ${Math.round(primeTotal / 30) / 2}시간 정도의 프라임이 남아 있습니다. 오전/긴 저녁 블록은 딥워크 한 가지에 쓰세요.`);

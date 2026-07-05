@@ -340,8 +340,8 @@ function buildFlexPlan(rows, days, dows, mon, weekEnd, now){
     const due = c.r.ddl ? String(c.r.ddl).slice(0,10) : null;
     const latest = due && due<weekEnd ? due : weekEnd;
     const currentDate = c.info?.date;
-    const slot = slots.find(s=> s.date<=latest && s.e-s.cursor>=duration && (!currentDate || s.date>=currentDate || c.r.dt==='hard'))
-      || slots.find(s=> s.date<=latest && s.e-s.cursor>=MIN_FLEX_MINUTES);
+    const canUseSlot = (s, needed)=> s.date<=latest && s.e-s.cursor>=needed && (!currentDate || s.date>=currentDate || c.r.dt==='hard');
+    const slot = slots.find(s=>canUseSlot(s,duration)) || slots.find(s=>canUseSlot(s,MIN_FLEX_MINUTES));
     if(!slot){ unplaced.push(c.r); return; }
     const minutes = Math.min(duration, slot.e-slot.cursor);
     const block = {row:c.r, date:slot.date, dow:slot.dow, s:slot.cursor, e:slot.cursor+minutes, duration:minutes, partial:minutes<duration};

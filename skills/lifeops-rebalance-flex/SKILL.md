@@ -7,7 +7,7 @@ description: Rebalance LifeOps flexible tasks into open prime after events, dead
 
 ## Workflow
 
-1. Read `../lifeops-board/references/lifeops-glossary-policy.md`.
+1. Read the shared reference at repository path `skills/lifeops-board/references/lifeops-glossary-policy.md` (from this skill folder, `../lifeops-board/references/lifeops-glossary-policy.md`).
 2. Identify the target week. Use the changed event/task date, the user's requested date, or the current week in `Asia/Seoul`.
 3. Run the rebalance command:
 

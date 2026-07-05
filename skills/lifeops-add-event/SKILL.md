@@ -7,7 +7,7 @@ description: Register fixed-time LifeOps schedules, appointments, meetings, clas
 
 ## Workflow
 
-1. Read `../lifeops-board/references/lifeops-glossary-policy.md`.
+1. Read the shared reference at repository path `skills/lifeops-board/references/lifeops-glossary-policy.md` (from this skill folder, `../lifeops-board/references/lifeops-glossary-policy.md`).
 2. Interpret relative dates using the current date and `Asia/Seoul`.
 3. If the user asks to import, reconcile, or verify existing calendar commitments, use Google Calendar with a bounded window before writing.
 4. Ask before saving if title, date, or start time is unclear after any available lookup.

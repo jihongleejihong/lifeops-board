@@ -9,14 +9,14 @@ description: Initialize an iCloud-backed LifeOps schedule root, interpret conver
 
 Use this skill when the user wants schedule conversation saved into a static LifeOps HTML board.
 
-1. Read `references/lifeops-glossary-policy.md`.
+1. Read the shared reference at repository path `skills/lifeops-board/references/lifeops-glossary-policy.md` (from this skill folder, `references/lifeops-glossary-policy.md`).
 2. Confirm the LifeOps root path if it has not been initialized.
 3. Route focused work to the narrower skill when possible:
-   - `$lifeops-add-event` for fixed schedules and appointments.
-   - `$lifeops-add-task` for unscheduled backlog capture.
-   - `$lifeops-rebalance-flex` for flexible task redistribution.
-   - `$lifeops-generate-insights` for tips and board diagnosis.
-   - `$lifeops-update-reference` for glossary/policy/reference edits.
+   - Invoke the `lifeops-add-event` skill for fixed schedules and appointments.
+   - Invoke the `lifeops-add-task` skill for unscheduled backlog capture.
+   - Invoke the `lifeops-rebalance-flex` skill for flexible task redistribution.
+   - Invoke the `lifeops-generate-insights` skill for tips and board diagnosis.
+   - Invoke the `lifeops-update-reference` skill for glossary/policy/reference edits.
 4. If handling directly, interpret the user's schedule into a `schedule.json.items[]` object.
 5. If title, date, or start time is ambiguous for a fixed-time event, ask before saving.
 6. Run `node scripts/lifeops-board.mjs add --root <path> --item-json '<json>'`.

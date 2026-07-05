@@ -7,7 +7,7 @@ description: Generate practical LifeOps board insights, weekly tips, risks, and 
 
 ## Workflow
 
-1. Read `../lifeops-board/references/lifeops-glossary-policy.md`.
+1. Read the shared reference at repository path `skills/lifeops-board/references/lifeops-glossary-policy.md` (from this skill folder, `../lifeops-board/references/lifeops-glossary-policy.md`).
 2. Inspect `schedule.json` and, when useful, render the board:
 
 ```bash
