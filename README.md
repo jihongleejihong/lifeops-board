@@ -18,7 +18,9 @@ The renderer pre-fills the HTML body, so iPhone Files / Quick Look can show the 
 ## Quick Start
 
 ```bash
-node scripts/lifeops-board.mjs init --root "$HOME/Library/Mobile Documents/com~apple~CloudDocs/lifeops-board"
+node scripts/lifeops-board.mjs init \
+  --root "$HOME/Library/Mobile Documents/com~apple~CloudDocs/lifeops-board" \
+  --template "$(pwd)/assets/templates/lifeop-board.html"
 
 node scripts/lifeops-board.mjs add \
   --root "$HOME/Library/Mobile Documents/com~apple~CloudDocs/lifeops-board" \
@@ -40,13 +42,22 @@ snapshots/YYYY-MM-DD.json
 
 ```bash
 node scripts/lifeops-board.mjs --help
-node scripts/lifeops-board.mjs init --root "<iCloud path>"
+node scripts/lifeops-board.mjs init --root "<iCloud path>" --template "$(pwd)/assets/templates/lifeop-board.html"
 node scripts/lifeops-board.mjs add --root "<iCloud path>" --item-json '<json>'
 node scripts/lifeops-board.mjs update --root "<iCloud path>" --id <id> --item-json '<json>'
 node scripts/lifeops-board.mjs remove --root "<iCloud path>" --id <id>
 node scripts/lifeops-board.mjs rebalance --root "<iCloud path>" --week YYYY-MM-DD
 node scripts/lifeops-board.mjs render --root "<iCloud path>"
 ```
+
+Before initialization, check whether the current GitHub remote has newer template or renderer files:
+
+```bash
+git fetch --quiet origin
+git diff --name-only HEAD..@{u} -- assets/templates/lifeop-board.html scripts/lifeops-board.mjs skills/lifeops-board
+```
+
+If relevant files changed and the worktree is clean, run `git pull --ff-only`, then run `init` with `--template` so the runtime root's template is refreshed.
 
 ## Codex
 

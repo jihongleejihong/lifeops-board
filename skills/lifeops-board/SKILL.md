@@ -11,24 +11,49 @@ Use this skill when the user wants schedule conversation saved into a static Lif
 
 1. Read the shared reference at repository path `skills/lifeops-board/references/lifeops-glossary-policy.md` (from this skill folder, `references/lifeops-glossary-policy.md`).
 2. Confirm the LifeOps root path if it has not been initialized.
-3. Route focused work to the narrower skill when possible:
+3. When initializing or re-initializing a root, check whether the current GitHub remote has newer template/renderer files before running `init`; see "Initialization Template Refresh".
+4. Route focused work to the narrower skill when possible:
    - Invoke the `lifeops-add-event` skill for fixed schedules and appointments.
    - Invoke the `lifeops-add-task` skill for unscheduled backlog capture.
    - Invoke the `lifeops-rebalance-flex` skill for flexible task redistribution.
    - Invoke the `lifeops-generate-insights` skill for tips and board diagnosis.
    - Invoke the `lifeops-update-reference` skill for glossary/policy/reference edits.
-4. If handling directly, interpret the user's schedule into a `schedule.json.items[]` object.
-5. If title, date, or start time is ambiguous for a fixed-time event, ask before saving.
-6. Run `node scripts/lifeops-board.mjs add --root <path> --item-json '<json>'`.
-7. Rebalance the affected week after fixed events or urgent tasks.
-8. Report the item id and `output/latest.html`.
+5. If handling directly, interpret the user's schedule into a `schedule.json.items[]` object.
+6. If title, date, or start time is ambiguous for a fixed-time event, ask before saving.
+7. Run `node scripts/lifeops-board.mjs add --root <path> --item-json '<json>'`.
+8. Rebalance the affected week after fixed events or urgent tasks.
+9. Report the item id and `output/latest.html`.
+
+## Initialization Template Refresh
+
+Before `init`, check whether the GitHub remote has template or renderer updates:
+
+```bash
+git remote get-url origin
+git fetch --quiet origin
+git diff --name-only HEAD..@{u} -- assets/templates/lifeop-board.html scripts/lifeops-board.mjs skills/lifeops-board
+```
+
+If the branch has no upstream, compare against `origin/main` instead of `@{u}`.
+
+- If relevant files changed upstream and the worktree is clean, run `git pull --ff-only` before initializing.
+- If the worktree is dirty, ahead, or the pull is not fast-forwardable, do not overwrite local work. Report that remote template updates exist and ask the user how to proceed.
+- Always initialize or reinitialize with the bundled template path so the runtime root's `template/lifeop-board.html` is refreshed:
+
+```bash
+node scripts/lifeops-board.mjs init \
+  --root "$HOME/Library/Mobile Documents/com~apple~CloudDocs/lifeops-board" \
+  --template "$(pwd)/assets/templates/lifeop-board.html"
+```
 
 ## Commands
 
 Initialize a root:
 
 ```bash
-node scripts/lifeops-board.mjs init --root "$HOME/Library/Mobile Documents/com~apple~CloudDocs/lifeops-board"
+node scripts/lifeops-board.mjs init \
+  --root "$HOME/Library/Mobile Documents/com~apple~CloudDocs/lifeops-board" \
+  --template "$(pwd)/assets/templates/lifeop-board.html"
 ```
 
 Add or replace an item by id:
