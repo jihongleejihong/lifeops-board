@@ -1,0 +1,13 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "lifeops-board",
+  "version": "1.0.0",
+  "description": "Initialize an iCloud-backed LifeOps schedule root, interpret conversational schedules into schedule.json, and render static output/latest.html from a bundled HTML template.",
+  "author": {
+    "name": "Jihong Lee",
+    "email": "jihong2jihong@gmail.com"
+  },
+  "skills": [
+    "./skills/lifeops-board"
+  ]
+}
