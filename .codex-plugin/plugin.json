@@ -6,8 +6,8 @@
     "name": "Jihong Lee",
     "email": "jihong2jihong@gmail.com"
   },
-  "homepage": "https://github.com/bluesignum/lifeops-board",
-  "repository": "https://github.com/bluesignum/lifeops-board",
+  "homepage": "https://github.com/jihongleejihong/lifeops-board",
+  "repository": "https://github.com/jihongleejihong/lifeops-board",
   "license": "MIT",
   "keywords": [
     "lifeops",
@@ -29,7 +29,7 @@
       "Read",
       "Write"
     ],
-    "websiteURL": "https://github.com/bluesignum/lifeops-board",
+    "websiteURL": "https://github.com/jihongleejihong/lifeops-board",
     "defaultPrompt": [
       "Use LifeOps Board to initialize my iCloud schedule root.",
       "Use LifeOps Board to add this schedule and refresh output/latest.html.",
