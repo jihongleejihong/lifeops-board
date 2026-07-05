@@ -58,8 +58,50 @@ codex plugin marketplace add jihongleejihong/lifeops-board --ref main
 codex plugin add lifeops-board@lifeops-board
 ```
 
-After installation, start a new Codex thread and ask Codex to use `@lifeops-board`.
+Update an existing installation:
+
+```bash
+codex plugin marketplace upgrade lifeops-board
+codex plugin add lifeops-board@lifeops-board
+```
+
+Verify the marketplace and plugin:
+
+```bash
+codex plugin marketplace list
+codex plugin list
+```
+
+After installation or update, start a new Codex thread and ask Codex to use `@lifeops-board`.
 
 ## Claude
 
-Claude can use the same repository by reading `CLAUDE.md` and running the Node CLI.
+Claude Code can install the plugin from the same GitHub marketplace.
+
+```bash
+claude plugin marketplace add https://github.com/jihongleejihong/lifeops-board.git
+claude plugin install lifeops-board@lifeops-board
+```
+
+If GitHub shorthand is supported in your Claude Code version, this also works:
+
+```bash
+claude plugin marketplace add jihongleejihong/lifeops-board
+claude plugin install lifeops-board@lifeops-board
+```
+
+Update an existing installation:
+
+```bash
+claude plugin marketplace update lifeops-board
+claude plugin update lifeops-board@lifeops-board
+```
+
+Verify the marketplace and plugin:
+
+```bash
+claude plugin marketplace list
+claude plugin list
+```
+
+After installation or update, start a new Claude Code session and ask Claude to use `lifeops-board`. Claude can also use the repository by reading `CLAUDE.md` and running the Node CLI directly.
