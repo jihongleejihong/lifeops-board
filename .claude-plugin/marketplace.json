@@ -2,19 +2,16 @@
   "name": "lifeops-board",
   "description": "LifeOps Board — iCloud-backed weekly schedule board with a Node CLI and iPhone-readable static HTML output.",
   "version": "1.0.0",
-  "author": "jihongleejihong",
-  "repository": "https://github.com/jihongleejihong/lifeops-board",
+  "owner": {
+    "name": "Jihong Lee",
+    "email": "jihong2jihong@gmail.com"
+  },
   "plugins": [
     {
       "name": "lifeops-board",
-      "description": "Initialize an iCloud-backed LifeOps schedule root, interpret conversational schedules into schedule.json, and render static output/latest.html from a bundled HTML template. Use when the user wants to register schedules, tasks, routines, behavior-change goals, or maintain an iPhone-readable local HTML LifeOps board.",
+      "description": "Initialize an iCloud-backed LifeOps schedule root, interpret conversational schedules into schedule.json, and render static output/latest.html from a bundled HTML template.",
       "version": "1.0.0",
-      "skills": [
-        {
-          "name": "lifeops-board",
-          "path": "skills/lifeops-board/SKILL.md"
-        }
-      ]
+      "source": "."
     }
   ]
 }
