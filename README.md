@@ -51,6 +51,15 @@ node scripts/lifeops-board.mjs render --root "<iCloud path>"
 
 This repository is a Codex plugin. The plugin exposes the `lifeops-board` skill under `skills/`.
 
+Install it from GitHub as a Codex marketplace source:
+
+```bash
+codex plugin marketplace add jihongleejihong/lifeops-board --ref main
+codex plugin add lifeops-board@lifeops-board
+```
+
+After installation, start a new Codex thread and ask Codex to use `@lifeops-board`.
+
 ## Claude
 
 Claude can use the same repository by reading `CLAUDE.md` and running the Node CLI.
