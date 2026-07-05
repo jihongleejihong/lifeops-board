@@ -11,7 +11,7 @@
       "name": "lifeops-board",
       "description": "Initialize an iCloud-backed LifeOps schedule root, interpret conversational schedules into schedule.json, and render static output/latest.html from a bundled HTML template.",
       "version": "1.0.0",
-      "source": "."
+      "source": "./"
     }
   ]
 }
