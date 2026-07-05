@@ -107,3 +107,14 @@ claude plugin list
 ```
 
 After installation or update, start a new Claude Code session and ask Claude to use `lifeops-board`. Claude can also use the repository by reading `CLAUDE.md` and running the Node CLI directly.
+
+## Skills
+
+| Skill | Trigger |
+|---|---|
+| `lifeops-board` | Initialize the root, register any schedule item, or render the board. General-purpose entry point. |
+| `lifeops-add-event` | Add a fixed-time appointment, meeting, class, or travel block to `schedule.json`. Automatically rebalances the affected week. |
+| `lifeops-add-task` | Capture a backlog task, routine, or behavior-change goal without assigning an exact time. |
+| `lifeops-rebalance-flex` | Re-fit unscheduled flexible tasks into remaining open prime slots after events or deadlines change. |
+| `lifeops-generate-insights` | Diagnose the week: capacity risks, hard deadlines, best next action, recovery gaps. |
+| `lifeops-update-reference` | Edit the shared glossary and policy file (`skills/lifeops-board/references/lifeops-glossary-policy.md`) that all skills read. |
